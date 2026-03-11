@@ -15,7 +15,7 @@ st.set_page_config(page_title="Budget Tracker", layout="wide", page_icon="💸")
 # ── THEME ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
     --bg: #0e0f13;
@@ -31,15 +31,17 @@ st.markdown("""
 }
 
 html, body, [class*="css"] {
-    font-family: 'DM Mono', monospace;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: var(--bg);
     color: var(--text);
 }
 
-h1, h2, h3 {font-family: 'Syne', sans-serif; font-weight: 800;}
+h1, h2, h3 {font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;}
 
 header[data-testid="stHeader"] {display:none;}
 #MainMenu, footer {display:none;}
+[data-testid="stSidebarCollapsedControl"] {display:none;}
+section[data-testid="stSidebar"] {display:none;}
 
 .block-container {padding: 2rem 2.5rem;}
 
@@ -47,7 +49,7 @@ header[data-testid="stHeader"] {display:none;}
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1.4rem 1.6rem;
+    padding: 1.2rem 1.4rem;
     position: relative;
     overflow: hidden;
 }
@@ -58,13 +60,28 @@ header[data-testid="stHeader"] {display:none;}
     height: 3px;
     background: linear-gradient(90deg, var(--accent), var(--accent2));
 }
-.kpi-label {font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.4rem;}
-.kpi-value {font-family: 'Syne', sans-serif; font-size: 1.75rem; font-weight: 800; color: var(--text);}
-.kpi-sub   {font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem;}
+.kpi-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+.kpi-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(1rem, 1.8vw, 1.4rem);
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.kpi-sub {font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;}
 
 .page-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 2rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.8rem;
     font-weight: 800;
     background: linear-gradient(135deg, #7c6af7, #f97c6a);
     -webkit-background-clip: text;
@@ -73,12 +90,13 @@ header[data-testid="stHeader"] {display:none;}
 }
 .page-sub {color: var(--muted); font-size: 0.82rem; margin-bottom: 1.5rem;}
 
-.progress-wrap {background: var(--border); border-radius: 99px; height: 10px; margin: 0.5rem 0;}
-.progress-fill {height: 10px; border-radius: 99px; transition: width 0.4s;}
+.progress-wrap {background: var(--border); border-radius: 99px; height: 8px; margin: 0.5rem 0;}
+.progress-fill {height: 8px; border-radius: 99px; transition: width 0.4s;}
 
 button[data-baseweb="tab"] {
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.8rem !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
     color: var(--muted) !important;
 }
 button[data-baseweb="tab"][aria-selected="true"] {
@@ -91,7 +109,7 @@ button[data-baseweb="tab"][aria-selected="true"] {
     border: 1px solid var(--border) !important;
     border-radius: 10px !important;
     color: var(--text) !important;
-    font-family: 'DM Mono', monospace !important;
+    font-family: 'JetBrains Mono', monospace !important;
 }
 
 .stButton>button {
@@ -99,8 +117,9 @@ button[data-baseweb="tab"][aria-selected="true"] {
     color: white !important;
     border: none !important;
     border-radius: 10px !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.82rem !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
     padding: 0.5rem 1.2rem !important;
     transition: opacity 0.2s;
 }
