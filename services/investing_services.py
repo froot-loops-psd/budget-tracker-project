@@ -1,8 +1,10 @@
 import pandas as pd
+import streamlit as st
 
 
-def get_investments(investing_ws, username: str) -> pd.DataFrame:
-    records = investing_ws.get_all_records()
+@st.cache_data(ttl=30, show_spinner=False)
+def get_investments(_investing_ws, username: str) -> pd.DataFrame:
+    records = _investing_ws.get_all_records()
     df = pd.DataFrame(records)
     if df.empty:
         return pd.DataFrame()
@@ -24,9 +26,8 @@ def add_investment(
     amount: float,
     return_val: float,
 ):
-    investing_ws.append_row([username, date_str, month_str, ticker, amount, return_val])
-
-
-def delete_investment(investing_ws, username: str, row_index: int):
-    """Delete a specific row by its 1-based sheet row index."""
-    investing_ws.delete_rows(row_index)
+    investing_ws.append_row(
+        [username, date_str, month_str, ticker, amount, return_val],
+        value_input_option="USER_ENTERED",
+    )
+    get_investments.clear()

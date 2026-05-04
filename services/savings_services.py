@@ -1,22 +1,23 @@
 import pandas as pd
+import streamlit as st
 
 
-def get_savings(savings_ws, username: str) -> pd.DataFrame:
-    records = savings_ws.get_all_records()
+@st.cache_data(ttl=30, show_spinner=False)
+def get_savings(_savings_ws, username: str) -> pd.DataFrame:
+    records = _savings_ws.get_all_records()
     df = pd.DataFrame(records)
     if df.empty:
         return pd.DataFrame()
     df = df[df["Username"] == username].copy()
-    if "Amount" in df.columns:
-        df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").fillna(0.0)
-    if "Goal" in df.columns:
-        df["Goal"] = pd.to_numeric(df["Goal"], errors="coerce").fillna(0.0)
+    for col in ["Amount", "Goal"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
     return df
 
 
-def get_monthly_savings(savings_ws, username: str, month: str):
-    """Return (amount, goal) for a specific month, or (None, None)."""
-    records = savings_ws.get_all_records()
+@st.cache_data(ttl=30, show_spinner=False)
+def get_monthly_savings(_savings_ws, username: str, month: str):
+    records = _savings_ws.get_all_records()
     for r in records:
         if r.get("Username") == username and r.get("Month") == month:
             return float(r.get("Amount") or 0), float(r.get("Goal") or 0)
@@ -24,7 +25,9 @@ def get_monthly_savings(savings_ws, username: str, month: str):
 
 
 def set_savings(savings_ws, username: str, month: str, amount: float, goal: float):
-    savings_ws.append_row([username, month, amount, goal])
+    savings_ws.append_row([username, month, amount, goal], value_input_option="USER_ENTERED")
+    get_savings.clear()
+    get_monthly_savings.clear()
 
 
 def update_savings(savings_ws, username: str, month: str, amount: float, goal: float):
@@ -33,4 +36,6 @@ def update_savings(savings_ws, username: str, month: str, amount: float, goal: f
         if len(row) >= 2 and row[0] == username and row[1] == month:
             savings_ws.update_cell(i, 3, amount)
             savings_ws.update_cell(i, 4, goal)
+            get_savings.clear()
+            get_monthly_savings.clear()
             return

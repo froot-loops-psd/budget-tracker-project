@@ -1,8 +1,11 @@
 import pandas as pd
+import streamlit as st
 
 
-def get_user_expenses(expense_ws, username: str) -> pd.DataFrame:
-    records = expense_ws.get_all_records()
+@st.cache_data(ttl=30, show_spinner=False)
+def get_user_expenses(_expense_ws, username: str) -> pd.DataFrame:
+    """Cached — refreshes every 30 seconds max."""
+    records = _expense_ws.get_all_records()
     df = pd.DataFrame(records)
     if df.empty:
         return pd.DataFrame()
@@ -23,7 +26,11 @@ def add_expense(
     date_str: str,
     month_str: str,
 ):
-    expense_ws.append_row([username, description, amount, category, date_str, month_str])
+    expense_ws.append_row(
+        [username, description, amount, category, date_str, month_str],
+        value_input_option="USER_ENTERED",
+    )
+    get_user_expenses.clear()
 
 
 def auto_archive(expense_ws, archive_ws, current_month: str):
@@ -36,7 +43,7 @@ def auto_archive(expense_ws, archive_ws, current_month: str):
     try:
         month_col = header.index("Month")
     except ValueError:
-        return  # Sheet structure unexpected, skip safely
+        return
 
     keep = [header]
     to_archive = []
@@ -51,15 +58,13 @@ def auto_archive(expense_ws, archive_ws, current_month: str):
     if not to_archive:
         return
 
-    # Append old rows to archive
     arch_header = archive_ws.row_values(1)
     if arch_header != header:
         archive_ws.clear()
         archive_ws.append_row(header)
-    for row in to_archive:
-        archive_ws.append_row(row)
+    if to_archive:
+        archive_ws.append_rows(to_archive, value_input_option="USER_ENTERED")
 
-    # Rewrite expense sheet with only current-month rows
     expense_ws.clear()
-    for row in keep:
-        expense_ws.append_row(row)
+    expense_ws.update([header] + keep[1:], value_input_option="USER_ENTERED")
+    get_user_expenses.clear()

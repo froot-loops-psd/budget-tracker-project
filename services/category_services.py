@@ -1,3 +1,5 @@
+import streamlit as st
+
 DEFAULT_CATEGORIES = [
     "Coffee", "Cig", "Expense", "FnB",
     "Investing", "Liability", "Other",
@@ -5,9 +7,10 @@ DEFAULT_CATEGORIES = [
 ]
 
 
-def get_user_categories(cat_ws, username: str) -> list[str]:
-    """Merge default + user-custom categories, sorted."""
-    records = cat_ws.get_all_records()
+@st.cache_data(ttl=120, show_spinner=False)
+def get_user_categories(_cat_ws, username: str) -> list[str]:
+    """Cached — refreshes every 2 minutes."""
+    records = _cat_ws.get_all_records()
     custom = [
         r["CategoryName"]
         for r in records
@@ -18,10 +21,10 @@ def get_user_categories(cat_ws, username: str) -> list[str]:
 
 def add_category(cat_ws, username: str, category_name: str):
     cat_ws.append_row([username, category_name])
+    get_user_categories.clear()
 
 
 def delete_category(cat_ws, username: str, category_name: str) -> bool:
-    """Delete a custom category row. Returns True if something was deleted."""
     rows = cat_ws.get_all_values()
     if not rows:
         return False
@@ -36,6 +39,6 @@ def delete_category(cat_ws, username: str, category_name: str) -> bool:
             kept.append(row)
     if deleted:
         cat_ws.clear()
-        for r in kept:
-            cat_ws.append_row(r)
+        cat_ws.update(kept)
+        get_user_categories.clear()
     return deleted
