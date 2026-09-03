@@ -430,7 +430,12 @@ with tabs[5]:
 
 # ═══════ TAB 6 — CATEGORIES ═══════════════════════════════════════════════════
 with tabs[6]:
-    st.subheader("Manage Categories")
+    col_cat_title, col_cat_link = st.columns([4, 1.6])
+    with col_cat_title:
+        st.subheader("Manage Categories")
+    with col_cat_link:
+        if st.button("🏷️ Open full page", use_container_width=True):
+            st.switch_page("pages/custom_category.py")
 
     all_cats    = get_user_categories(category_ws, USERNAME)
     custom_cats = [c for c in all_cats if c not in DEFAULT_CATEGORIES]

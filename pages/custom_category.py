@@ -7,22 +7,10 @@ from services.category_services import (
     delete_category,
     DEFAULT_CATEGORIES,
 )
+from theme import apply_theme, theme_toggle
 
 st.set_page_config(page_title="Categories", page_icon="🏷️", layout="centered")
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400&display=swap');
-html,body,[class*="css"]{background:#0e0f13;color:#e8eaf2;font-family:'DM Mono',monospace;}
-header[data-testid="stHeader"],footer,#MainMenu{display:none;}
-h1,h2,h3{font-family:'Syne',sans-serif;font-weight:800;}
-.stTextInput>div>div>input{background:#1c1f2a!important;border:1px solid #2a2d3a!important;border-radius:10px!important;color:#e8eaf2!important;}
-.stButton>button{background:linear-gradient(135deg,#7c6af7,#6254d4)!important;color:white!important;border:none!important;border-radius:10px!important;font-family:'DM Mono',monospace!important;}
-.stSelectbox>div>div{background:#1c1f2a!important;border:1px solid #2a2d3a!important;border-radius:10px!important;color:#e8eaf2!important;}
-.badge{display:inline-block;background:#1c1f2a;border:1px solid #2a2d3a;border-radius:99px;padding:0.2rem 0.75rem;font-size:0.75rem;color:#7b7f96;margin:0.15rem;}
-.badge-custom{border-color:#7c6af7;color:#7c6af7;}
-</style>
-""", unsafe_allow_html=True)
+apply_theme()
 
 # ── GUARD ─────────────────────────────────────────────────────────────────────
 if "username" not in st.session_state:
@@ -40,13 +28,15 @@ all_cats    = get_user_categories(category_ws, USERNAME)
 custom_cats = [c for c in all_cats if c not in DEFAULT_CATEGORIES]
 
 # ── UI ────────────────────────────────────────────────────────────────────────
-col_back, _ = st.columns([1, 5])
+col_back, _, col_toggle = st.columns([1, 3, 1.4])
 with col_back:
-    if st.button("← Back"):
+    if st.button("← Back", use_container_width=True):
         st.switch_page("pages/tracker.py")
+with col_toggle:
+    theme_toggle()
 
-st.markdown("## 🏷️ Manage Categories")
-st.markdown(f"<div style='color:#7b7f96;font-size:0.82rem;margin-bottom:1.5rem'>Logged in as <b>{USERNAME}</b></div>", unsafe_allow_html=True)
+st.markdown('<div class="title-gradient" style="font-size:1.6rem;">🏷️ Manage Categories</div>', unsafe_allow_html=True)
+st.markdown(f"<div class='subtitle' style='margin-bottom:1.5rem'>Logged in as <b>{USERNAME}</b></div>", unsafe_allow_html=True)
 
 # Default categories (read-only)
 st.markdown("**Default categories** — always available, cannot be deleted:")
@@ -56,7 +46,7 @@ st.markdown("<br>**Your custom categories:**", unsafe_allow_html=True)
 if custom_cats:
     st.markdown(" ".join(f'<span class="badge badge-custom">{c}</span>' for c in custom_cats), unsafe_allow_html=True)
 else:
-    st.markdown('<span style="color:#7b7f96;font-size:0.85rem">None yet — add one below.</span>', unsafe_allow_html=True)
+    st.markdown('<span style="color:var(--muted);font-size:0.85rem">None yet — add one below.</span>', unsafe_allow_html=True)
 
 st.markdown("---")
 
