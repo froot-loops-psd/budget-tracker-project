@@ -10,140 +10,29 @@ from services.budget_services import get_budget, set_budget, update_budget
 from services.expense_services import get_user_expenses, add_expense, auto_archive
 from services.savings_services import get_savings, get_monthly_savings, set_savings, update_savings
 from services.investing_services import get_investments, add_investment
+from theme import apply_theme, theme_toggle, bar_color, PALETTES, theme_mode
 
 # ── CONFIG ───────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Budget Tracker", layout="wide", page_icon="💸")
+apply_theme()
+PAL = PALETTES[theme_mode()]
 
-# ── THEME ─────────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+def style_chart(fig):
+    """Apply theme-aware colors so Plotly charts stay legible in both light and dark mode."""
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font_color=PAL["text"],
+        xaxis=dict(gridcolor=PAL["border"]), yaxis=dict(gridcolor=PAL["border"]),
+        legend_title_text="",
+    )
+    return fig
 
-:root {
-    --bg: #0e0f13;
-    --surface: #16181f;
-    --card: #1c1f2a;
-    --border: #2a2d3a;
-    --accent: #7c6af7;
-    --accent2: #f97c6a;
-    --green: #4ade80;
-    --red: #f87171;
-    --text: #e8eaf2;
-    --muted: #7b7f96;
-}
-
-html, body, [class*="css"] {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
-}
-
-h1, h2, h3 {font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;}
-
-header[data-testid="stHeader"] {display:none;}
-#MainMenu, footer {display:none;}
-[data-testid="stSidebarCollapsedControl"] {display:none;}
-section[data-testid="stSidebar"] {display:none;}
-
-.block-container {padding: 2rem 2.5rem;}
-
-.kpi-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.2rem 1.4rem;
-    position: relative;
-    overflow: hidden;
-}
-.kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-}
-.kpi-label {
-    font-size: 0.68rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 0.35rem;
-    font-weight: 600;
-}
-.kpi-value {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: clamp(1rem, 1.8vw, 1.4rem);
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.kpi-sub {font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;}
-
-.page-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #7c6af7, #f97c6a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 0;
-}
-.page-sub {color: var(--muted); font-size: 0.82rem; margin-bottom: 1.5rem;}
-
-.progress-wrap {background: var(--border); border-radius: 99px; height: 8px; margin: 0.5rem 0;}
-.progress-fill {height: 8px; border-radius: 99px; transition: width 0.4s;}
-
-button[data-baseweb="tab"] {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.82rem !important;
-    font-weight: 600 !important;
-    color: var(--muted) !important;
-}
-button[data-baseweb="tab"][aria-selected="true"] {
-    color: var(--accent) !important;
-    border-bottom-color: var(--accent) !important;
-}
-
-.stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div {
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text) !important;
-    font-family: 'JetBrains Mono', monospace !important;
-}
-
-.stButton>button {
-    background: linear-gradient(135deg, var(--accent), #6254d4) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 10px !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 0.85rem !important;
-    padding: 0.5rem 1.2rem !important;
-    transition: opacity 0.2s;
-}
-.stButton>button:hover {opacity: 0.85 !important;}
-
-.stDataFrame {border-radius: 12px; overflow: hidden;}
-[data-testid="stMetricDelta"] {display:none;}
-.stAlert {border-radius: 10px !important;}
-hr {border-color: var(--border);}
-
-.badge {
-    display: inline-block;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 99px;
-    padding: 0.2rem 0.7rem;
-    font-size: 0.73rem;
-    color: var(--muted);
-    margin: 0.15rem;
-}
-</style>
-""", unsafe_allow_html=True)
+def empty_state(icon, text):
+    st.markdown(f"""
+    <div class="empty-state">
+        <div class="icon">{icon}</div>
+        {text}
+    </div>""", unsafe_allow_html=True)
 
 # ── GUARD ─────────────────────────────────────────────────────────────────────
 if "username" not in st.session_state:
@@ -181,18 +70,20 @@ remaining     = current_budget - total_spent
 pct_used      = (total_spent / current_budget * 100) if current_budget > 0 else 0
 
 # ── HEADER ────────────────────────────────────────────────────────────────────
-col_h1, col_h2 = st.columns([5, 1])
+col_h1, col_h2, col_h3 = st.columns([5, 1.3, 1])
 with col_h1:
-    st.markdown(f'<div class="page-title">💸 Budget Tracker</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="page-sub">Signed in as <b>{USERNAME}</b> · {TODAY.strftime("%A, %d %B %Y")}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="title-gradient" style="font-size:1.8rem;">💸 Budget Tracker</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="subtitle" style="margin-bottom:1.5rem;">Signed in as <b>{USERNAME}</b> · {TODAY.strftime("%A, %d %B %Y")}</div>', unsafe_allow_html=True)
 with col_h2:
-    if st.button("🚪 Logout"):
+    theme_toggle()
+with col_h3:
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.clear()
         st.switch_page("app.py")
 
 # ── KPI ROW ───────────────────────────────────────────────────────────────────
-bar_color = "#4ade80" if pct_used < 75 else ("#facc15" if pct_used < 90 else "#f87171")
-k1, k2, k3, k4 = st.columns(4)
+bar_col = bar_color(pct_used)
+k1, k2, k3, k4 = st.columns(4, gap="medium")
 
 def kpi(col, label, value, sub=""):
     col.markdown(f"""
@@ -209,7 +100,7 @@ kpi(k4, "Usage",           f"{pct_used:.1f}%",           "of monthly budget")
 
 st.markdown(f"""
 <div class="progress-wrap">
-  <div class="progress-fill" style="width:{min(pct_used,100):.1f}%;background:{bar_color};"></div>
+  <div class="progress-fill" style="width:{min(pct_used,100):.1f}%;background:{bar_col};"></div>
 </div>""", unsafe_allow_html=True)
 
 st.markdown("---")
@@ -300,7 +191,7 @@ with tabs[2]:
     combined = pd.concat([arch_df, df], ignore_index=True) if not df.empty or not arch_df.empty else pd.DataFrame()
 
     if combined.empty:
-        st.info("No data yet.")
+        empty_state("📈", "No data yet — expenses you log will show up here as trends.")
     else:
         combined = combined[combined["Username"] == USERNAME].copy() if "Username" in combined.columns else combined
         if "Month" not in combined.columns and "Date" in combined.columns:
@@ -311,13 +202,9 @@ with tabs[2]:
         fig_line = px.line(
             monthly_sum, x="Month", y="Amount", markers=True,
             title="Monthly Spend Trend",
-            color_discrete_sequence=["#7c6af7"],
+            color_discrete_sequence=[PAL["accent"]],
         )
-        fig_line.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font_color="#e8eaf2", title_font_size=15,
-            xaxis=dict(gridcolor="#2a2d3a"), yaxis=dict(gridcolor="#2a2d3a"),
-        )
+        style_chart(fig_line).update_layout(title_font_size=15)
         st.plotly_chart(fig_line, use_container_width=True)
 
         st.markdown("#### Category Breakdown by Month")
@@ -330,18 +217,16 @@ with tabs[2]:
         with col_b:
             fig_bar = px.bar(
                 sel, x="Category", y="Amount", title=f"Spending — {month_pick}",
-                color_discrete_sequence=["#7c6af7"],
+                color_discrete_sequence=[PAL["accent"]],
             )
-            fig_bar.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                                  font_color="#e8eaf2", xaxis=dict(gridcolor="#2a2d3a"),
-                                  yaxis=dict(gridcolor="#2a2d3a"))
+            style_chart(fig_bar)
             st.plotly_chart(fig_bar, use_container_width=True)
         with col_p:
             fig_pie = px.pie(
                 sel, values="Amount", names="Category", title="Category Share",
                 color_discrete_sequence=px.colors.sequential.Purpor,
             )
-            fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="#e8eaf2")
+            fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color=PAL["text"])
             st.plotly_chart(fig_pie, use_container_width=True)
 
         with st.expander("📋 Raw Data"):
@@ -352,11 +237,11 @@ with tabs[3]:
     st.subheader("Archive — Past Months")
 
     if arch_df.empty:
-        st.info("No archived data yet.")
+        empty_state("🗂️", "No archived data yet — past months are auto-archived here.")
     else:
         months = sorted(arch_df["Month"].dropna().unique(), reverse=True) if "Month" in arch_df.columns else []
         if not months:
-            st.info("No archive months found.")
+            empty_state("🗂️", "No archive months found.")
         else:
             month_sel = st.selectbox("Select archived month", months)
             view = arch_df[arch_df["Month"] == month_sel].sort_values("Date", ascending=False)
@@ -395,14 +280,14 @@ with tabs[4]:
     # ── Progress toward goal ───────────────────────────────────────────────────
     if saved_goal and saved_goal > 0:
         pct_saved = min((saved_amt or 0) / saved_goal * 100, 100)
-        bar_col   = "#4ade80" if pct_saved >= 100 else ("#facc15" if pct_saved >= 50 else "#f97c6a")
+        sav_col   = "var(--green)" if pct_saved >= 100 else ("var(--yellow)" if pct_saved >= 50 else "var(--accent2)")
         st.markdown(f"""
-        <div style="margin:1rem 0 0.3rem;font-size:0.82rem;color:#7b7f96;">
-            Progress: <b style="color:#e8eaf2">Rp {(saved_amt or 0):,.0f}</b> of
-            <b style="color:#e8eaf2">Rp {saved_goal:,.0f}</b> goal ({pct_saved:.1f}%)
+        <div style="margin:1rem 0 0.3rem;font-size:0.82rem;color:var(--muted);">
+            Progress: <b style="color:var(--text)">Rp {(saved_amt or 0):,.0f}</b> of
+            <b style="color:var(--text)">Rp {saved_goal:,.0f}</b> goal ({pct_saved:.1f}%)
         </div>
         <div class="progress-wrap">
-          <div class="progress-fill" style="width:{pct_saved:.1f}%;background:{bar_col};"></div>
+          <div class="progress-fill" style="width:{pct_saved:.1f}%;background:{sav_col};"></div>
         </div>""", unsafe_allow_html=True)
 
     # ── Historical savings chart ───────────────────────────────────────────────
@@ -414,16 +299,12 @@ with tabs[4]:
         fig_sav = px.bar(
             sav_df, x="Month", y=["Amount", "Goal"],
             barmode="group", title="Monthly Savings vs Goal",
-            color_discrete_map={"Amount": "#7c6af7", "Goal": "#2a2d3a"},
+            color_discrete_map={"Amount": PAL["accent"], "Goal": PAL["border"]},
         )
-        fig_sav.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font_color="#e8eaf2", xaxis=dict(gridcolor="#2a2d3a"),
-            yaxis=dict(gridcolor="#2a2d3a"), legend_title_text="",
-        )
+        style_chart(fig_sav)
         st.plotly_chart(fig_sav, use_container_width=True)
     else:
-        st.info("No savings data yet.")
+        empty_state("🏦", "No savings data yet — set an amount above to start tracking.")
 
 # ═══════ TAB 5 — INVESTING ════════════════════════════════════════════════════
 with tabs[5]:
@@ -471,7 +352,7 @@ with tabs[5]:
         total_return   = float(inv_df["Return"].sum())
         net_value      = total_invested + total_return
         ret_pct        = (total_return / total_invested * 100) if total_invested > 0 else 0
-        ret_color      = "#4ade80" if total_return >= 0 else "#f87171"
+        ret_color      = PAL["green"] if total_return >= 0 else PAL["red"]
 
         pm1, pm2, pm3, pm4 = st.columns(4)
         def inv_kpi(col, label, value, sub=""):
@@ -501,13 +382,9 @@ with tabs[5]:
             fig_inv = px.bar(
                 by_ticker, x="Ticker", y=["Invested", "Return"],
                 barmode="group", title="Invested vs Return by Asset",
-                color_discrete_map={"Invested": "#7c6af7", "Return": "#4ade80"},
+                color_discrete_map={"Invested": PAL["accent"], "Return": PAL["green"]},
             )
-            fig_inv.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font_color="#e8eaf2", xaxis=dict(gridcolor="#2a2d3a"),
-                yaxis=dict(gridcolor="#2a2d3a"), legend_title_text="",
-            )
+            style_chart(fig_inv)
             st.plotly_chart(fig_inv, use_container_width=True)
         with ct2:
             fig_pie_inv = px.pie(
@@ -515,7 +392,7 @@ with tabs[5]:
                 title="Portfolio Allocation",
                 color_discrete_sequence=px.colors.sequential.Purpor,
             )
-            fig_pie_inv.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="#e8eaf2")
+            fig_pie_inv.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color=PAL["text"])
             st.plotly_chart(fig_pie_inv, use_container_width=True)
 
         # ── Growth over time ──────────────────────────────────────────────────
@@ -532,15 +409,11 @@ with tabs[5]:
             y=["Cumulative Invested", "Portfolio Value"],
             markers=True, title="Portfolio Growth",
             color_discrete_map={
-                "Cumulative Invested": "#7b7f96",
-                "Portfolio Value":     "#7c6af7",
+                "Cumulative Invested": PAL["muted"],
+                "Portfolio Value":     PAL["accent"],
             },
         )
-        fig_growth.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font_color="#e8eaf2", xaxis=dict(gridcolor="#2a2d3a"),
-            yaxis=dict(gridcolor="#2a2d3a"), legend_title_text="",
-        )
+        style_chart(fig_growth)
         st.plotly_chart(fig_growth, use_container_width=True)
 
         # ── Raw table ─────────────────────────────────────────────────────────
@@ -553,7 +426,7 @@ with tabs[5]:
                 use_container_width=True, hide_index=True
             )
     else:
-        st.info("No investment entries yet.")
+        empty_state("📊", "No investment entries yet — add one above to start tracking your portfolio.")
 
 # ═══════ TAB 6 — CATEGORIES ═══════════════════════════════════════════════════
 with tabs[6]:
@@ -569,7 +442,7 @@ with tabs[6]:
     if custom_cats:
         st.markdown(" ".join(f'<span class="badge">{c}</span>' for c in custom_cats), unsafe_allow_html=True)
     else:
-        st.markdown('<span style="color:#7b7f96;font-size:0.85rem">None yet.</span>', unsafe_allow_html=True)
+        st.markdown('<span style="color:var(--muted);font-size:0.85rem">None yet.</span>', unsafe_allow_html=True)
 
     st.markdown("---")
     col_add, col_del = st.columns(2)
