@@ -28,11 +28,31 @@ def apply_theme(sidebar: bool = False):
     but still hides the auto-generated multipage link list inside it.
     """
     p = PALETTES[theme_mode()]
-    sidebar_css = (
-        '[data-testid="stSidebarNav"] { display:none; }'
-        if sidebar else
-        'section[data-testid="stSidebar"] { display:none; }'
-    )
+    if sidebar:
+        # The sidebar-reopen button lives inside stHeader, so we can't display:none the
+        # whole header here (that would remove the button from the render tree too).
+        # Instead: collapse the header to zero height, hide its other contents, and pull
+        # the reopen button out via fixed positioning so a zero-sized ancestor can't clip it.
+        sidebar_css = """
+        [data-testid="stSidebarNav"] { display:none; }
+        header[data-testid="stHeader"] {
+            height: 0 !important; min-height: 0 !important; overflow: visible !important;
+            background: transparent !important; box-shadow: none !important;
+        }
+        [data-testid="stToolbarActions"], [data-testid="stMainMenu"],
+        [data-testid="stAppDeployButton"], [data-testid="stHeaderActionElements"] { display:none !important; }
+        [data-testid="stExpandSidebarButton"] {
+            position: fixed !important; top: 0.6rem !important; left: 0.6rem !important;
+            z-index: 999999 !important;
+        }
+        """
+    else:
+        sidebar_css = """
+        header[data-testid="stHeader"] { display:none; }
+        section[data-testid="stSidebar"] { display:none; }
+        [data-testid="stExpandSidebarButton"] { display:none; }
+        [data-testid="stSidebarCollapsedControl"] { display:none; }
+        """
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
@@ -52,11 +72,21 @@ def apply_theme(sidebar: bool = False):
 
     h1, h2, h3 {{ font-family: 'Sora', sans-serif; font-weight: 800; }}
 
-    header[data-testid="stHeader"] {{ display:none; }}
     #MainMenu, footer {{ display:none; }}
-    [data-testid="stSidebarCollapsedControl"] {{ display:none; }}
     [data-testid="stDecoration"] {{ display:none; }}
     {sidebar_css}
+
+    /* Re-open control for a collapsed sidebar (only relevant when sidebar=True) */
+    [data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapsedControl"] {{
+        background: var(--card) !important; border-radius: 10px !important;
+        top: 0.6rem !important; left: 0.6rem !important;
+        min-width: 2.2rem !important; min-height: 2.2rem !important;
+        padding: 0.4rem !important;
+    }}
+    [data-testid="stExpandSidebarButton"] svg, [data-testid="stSidebarCollapsedControl"] svg,
+    [data-testid="stExpandSidebarButton"] span, [data-testid="stSidebarCollapsedControl"] span {{
+        color: var(--text) !important; fill: var(--text) !important;
+    }}
 
     section[data-testid="stSidebar"] {{
         background: var(--surface);
