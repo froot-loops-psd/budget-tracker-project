@@ -68,7 +68,12 @@ def init_sheets():
 
 sh, expense_ws, archive_ws, budget_ws, category_ws, savings_ws, investing_ws = init_sheets()
 
-auto_archive(expense_ws, archive_ws, CURRENT_MONTH)
+# auto_archive hits the Sheets API directly (uncached) — the sidebar nav triggers a
+# full rerun on every click (unlike the old st.tabs, which never reran the script),
+# so this must run at most once per session or it burns through the API rate limit.
+if st.session_state.get("_auto_archived_month") != CURRENT_MONTH:
+    auto_archive(expense_ws, archive_ws, CURRENT_MONTH)
+    st.session_state["_auto_archived_month"] = CURRENT_MONTH
 
 # ── LOAD DATA ─────────────────────────────────────────────────────────────────
 df             = get_user_expenses(expense_ws, USERNAME)
